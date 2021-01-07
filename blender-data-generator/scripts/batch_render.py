@@ -65,18 +65,39 @@ def render(scene, camera_object, mesh_objects, camera_steps, file_prefix="render
                 'image': filename,
                 'meshes': {}
             }
-
+            textfilename = filename.split(sep, 1)[0]
+            #change the following line to include your desired output directory for .txt YOLO annotations
+            file = open(r'write here annotations output directory' + textfilename + '.txt','w+')
             """ Get the bounding box coordinates for each mesh """
             for object in mesh_objects:
                 bounding_box = boundingbox.camera_view_bounds_2d(scene, camera_object, object)
-                if bounding_box:
-                    label_entry['meshes'][object.name] = {
+                #this will enable the script to work when the object is out of the scene
+                if bounding_box and object.is_visible(scene): 
+                    label_entry['meshes']["object.name"] = {
                         'x1': bounding_box[0][0],
                         'y1': bounding_box[0][1],
                         'x2': bounding_box[1][0],
                         'y2': bounding_box[1][1]
                     }
-
+                else:
+                    bounding_box =  [[0,0], [0,0]]
+                #Formating the bounding boxes to match YOLO darknet annotations and writing them into the txt file
+                y = object.name, bounding_box[0][0], bounding_box[0][1], bounding_box[1][0], bounding_box[1][1]
+                width = bounding_box[1][0] - bounding_box[0][0] 
+                height = bounding_box[1][1] - bounding_box[0][1]
+                xC = bounding_box[0][0] + (width / 2)
+                yC = 1 - (bounding_box[0][1] + (height / 2))
+                objname = object.name    
+                z = object.name, xC, yC, width, height
+                if bounding_box != [[0,0], [0,0]] and object.is_visible(scene):
+                    for item in z:                    
+                        file.write("%s" % item)
+                        file.write(' ')
+                    file.write('\n')
+                
+                    print(label_entry)
+            labels.append(label_entry)
+            file.close()
             labels.append(label_entry)
 
     return labels
